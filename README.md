@@ -1,3 +1,30 @@
+# Getting Automerge WASM working in a Cloudflare Worker
+
+The worker file:
+
+```javascript
+import wasmBytes from "./automerge_wasm_bg.wasm";
+import * as bg from "./automerge_wasm_bg.js";
+
+const {create} = bg; 
+export interface Env {}
+
+export default {
+  async fetch(request, env, ctx): Promise<Response> {
+    // async init cannot happen outside request
+    // see later for generating bg.imports
+    const module = await WebAssembly.instantiate(bg.wasmBytes,bg.imports);
+    bg.__wbg_set_wasm(module.exports);
+    let doc = create();
+    doc.put("/", "prop1", 100);
+    let x = doc.materialize("_root");
+    return new Response(JSON.stringify(x));
+  },
+};
+```
+
+## Creating automerge_wasm_bg.js
+
 After npm installing @automerge/automerge
 
 Copy:
